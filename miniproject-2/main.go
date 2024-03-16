@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-pdf/fpdf"
 	"os"
 	"sort"
 	"sync"
@@ -33,7 +34,7 @@ func tambahBuku() {
 	fmt.Println("======")
 	fmt.Println("Tambah Buku")
 	fmt.Println("======")
-	fmt.Println(ListBook)
+	//fmt.Println(ListBook)
 
 	draftBuku := []BookLibrary{}
 
@@ -44,42 +45,53 @@ func tambahBuku() {
 			fmt.Println("Terjadi Kesalahan : ", err)
 			return
 		}
-	
+
 		for _, book := range draftBuku {
 			if book.KodeBuku == "book-"+bookCode {
 				fmt.Println("Kode Buku Sudah Ada. Masukkan Kode Buku Lain.")
 				return
 			}
 		}
-	
+
+		listJsonBuku, err := os.ReadDir("buku")
+		if err != nil {
+			fmt.Println("Terjadi error: ", err)
+		}
+		for _, bookJson := range listJsonBuku {
+			if bookJson.Name() == "book-"+bookCode+".json" {
+				fmt.Println("Kode Buku Sudah Ada. Masukkan Kode Buku Lain.")
+				return
+			}
+		}
+
 		fmt.Print("Masukkan Judul Buku : ")
 		_, err = fmt.Scanln(&bookTitle)
 		if err != nil {
 			fmt.Println("Terjadi Kesalahan : ", err)
 			return
 		}
-	
+
 		fmt.Print("Masukkan Pengarang Buku : ")
 		_, err = fmt.Scanln(&bookAuthor)
 		if err != nil {
 			fmt.Println("Terjadi Kesalahan : ", err)
 			return
 		}
-	
+
 		fmt.Print("Masukkan Penerbit Buku : ")
 		_, err = fmt.Scanln(&bookPublisher)
 		if err != nil {
 			fmt.Println("Terjadi Kesalahan : ", err)
 			return
 		}
-	
+
 		fmt.Print("Masukkan Total Halaman : ")
 		_, err = fmt.Scanln(&pageTotal)
 		if err != nil {
 			fmt.Println("Terjadi Kesalahan : ", err)
 			return
 		}
-	
+
 		fmt.Print("Masukkan Tahun Terbit : ")
 		_, err = fmt.Scanln(&publishedYear)
 		if err != nil {
@@ -88,13 +100,13 @@ func tambahBuku() {
 		}
 
 		draftBuku = append(draftBuku, BookLibrary{
-			KodeBuku: fmt.Sprintf("book-%s", bookCode),
-			JudulBuku: bookTitle,
-			Pengarang: bookAuthor,
-			Penerbit: bookPublisher,
+			KodeBuku:      fmt.Sprintf("book-%s", bookCode),
+			JudulBuku:     bookTitle,
+			Pengarang:     bookAuthor,
+			Penerbit:      bookPublisher,
 			JumlahHalaman: pageTotal,
-			TahunTerbit: publishedYear,
-			Tanggal: time.Now(),
+			TahunTerbit:   publishedYear,
+			Tanggal:       time.Now(),
 		})
 
 		pilihanTambahBuku := 0
@@ -137,7 +149,7 @@ func tambahBuku() {
 	fmt.Println("Berhasil Tambah Buku")
 }
 
-func simpanBuku(ch <-chan BookLibrary, wg *sync.WaitGroup, noPustakawan int)  {
+func simpanBuku(ch <-chan BookLibrary, wg *sync.WaitGroup, noPustakawan int) {
 
 	for bukuTersimpan := range ch {
 		dataJson, err := json.Marshal(bukuTersimpan)
@@ -157,7 +169,7 @@ func simpanBuku(ch <-chan BookLibrary, wg *sync.WaitGroup, noPustakawan int)  {
 	wg.Done()
 }
 
-func lihatListBuku(ch <-chan string, chBuku chan BookLibrary, wg *sync.WaitGroup)  {
+func lihatListBuku(ch <-chan string, chBuku chan BookLibrary, wg *sync.WaitGroup) {
 	var bookLibrary BookLibrary
 	for kodeBuku := range ch {
 		dataJson, err := os.ReadFile(fmt.Sprintf("buku/%s", kodeBuku))
@@ -183,7 +195,7 @@ func listBuku() {
 	fmt.Println("Memuat Data...")
 	ListBook = []BookLibrary{}
 
-	listJsonBuku,err :=  os.ReadDir("buku")
+	listJsonBuku, err := os.ReadDir("buku")
 	if err != nil {
 		fmt.Println("Terjadi error: ", err)
 	}
@@ -271,6 +283,17 @@ func updateBuku(kode string) {
 		return
 	}
 
+	listJsonBuku, err := os.ReadDir("buku")
+	if err != nil {
+		fmt.Println("Terjadi error: ", err)
+	}
+	for _, bookJson := range listJsonBuku {
+		if bookJson.Name() == "book-"+book.KodeBuku+".json" {
+			fmt.Println("Kode Buku Sudah Ada. Masukkan Kode Buku Lain.")
+			return
+		}
+	}
+
 	fmt.Print("Masukkan Judul Buku : ")
 	_, err = fmt.Scanln(&book.JudulBuku)
 	if err != nil {
@@ -306,14 +329,32 @@ func updateBuku(kode string) {
 		return
 	}
 
+	book.KodeBuku = "book-" + book.KodeBuku
 	fmt.Println(book)
 
 	for i, b := range ListBook {
 		if b.KodeBuku == kode {
 			ListBook[i] = book
+			dataJson, err := json.Marshal(ListBook[i])
+			if err != nil {
+				fmt.Println("Terjadi error:", err)
+			}
+
+			err = os.WriteFile(fmt.Sprintf("buku/%s.json", ListBook[i].KodeBuku), dataJson, 0644)
+			if err != nil {
+				fmt.Println("Terjadi Error:", err)
+				return
+			}
+
+			err = os.Remove(fmt.Sprintf("buku/%s.json", kode))
+			if err != nil {
+				fmt.Println("Terjadi error:", err)
+			}
+
 			break
 		}
 	}
+
 }
 
 func hapusBuku(kode string) {
@@ -331,9 +372,40 @@ func hapusBuku(kode string) {
 		}
 	}
 
-
 	if !isBook {
 		fmt.Println("Kode Buku Salah Atau Tidak Ada")
+	}
+}
+
+func GeneratePdfBuku() {
+	listBuku()
+	fmt.Println("=================================")
+	fmt.Println("Membuat Daftar Buku ...")
+	fmt.Println("=================================")
+	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+
+	pdf.SetFont("Arial", "", 12)
+	pdf.SetLeftMargin(10)
+	pdf.SetRightMargin(10)
+
+	for i, buku := range ListBook {
+		bukuText := fmt.Sprintf(
+			"Buku #%d:\nKode Buku : %s\nJudul : %s\nPengarang : %s\nPenerbit : %s\nJumlah Halaman : %d\nTahun Terbit : %d\nTanggal : %s\n",
+			i+1, buku.KodeBuku, buku.JudulBuku,
+			buku.Pengarang, buku.Penerbit, buku.JumlahHalaman, buku.TahunTerbit,
+			buku.Tanggal.Format("2006-01-02 15:04:05"))
+
+		pdf.MultiCell(0, 10, bukuText, "0", "L", false)
+		pdf.Ln(5)
+	}
+
+	err := pdf.OutputFileAndClose(
+		fmt.Sprintf("daftar_buku_%s.pdf",
+			time.Now().Format("2006-01-02-15-04-05")))
+
+	if err != nil {
+		fmt.Println("Terjadi error:", err)
 	}
 }
 
@@ -352,7 +424,8 @@ func main() {
 	fmt.Println("3. Lihat Detail Buku")
 	fmt.Println("4. Edit Buku")
 	fmt.Println("5. Hapus Buku")
-	fmt.Println("6. Keluar")
+	fmt.Println("6. Generate PDF")
+	fmt.Println("7. Keluar")
 
 	fmt.Print("Masukkan Opsi : ")
 	_, err := fmt.Scanln(&opsi)
@@ -397,6 +470,8 @@ func main() {
 		}
 		hapusBuku(pilihanHapus)
 	case 6:
+		GeneratePdfBuku()
+	case 7:
 		os.Exit(0)
 	default:
 		fmt.Println("Tidak Ada Opsi")
