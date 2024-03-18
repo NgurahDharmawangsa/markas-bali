@@ -367,7 +367,7 @@ func hapusBuku(kode string) {
 			if err != nil {
 				fmt.Println("Terjadi error:", err)
 			}
-			fmt.Println("Buku Berhasil Dihapus")
+			fmt.Println("Buku Berhasil Dihapuss")
 			break
 		}
 	}
