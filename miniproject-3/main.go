@@ -8,6 +8,7 @@ import (
 	"os"
 	"sekolahbeta/miniproject3/config"
 	"sekolahbeta/miniproject3/model"
+	"sekolahbeta/miniproject3/utils"
 	"sync"
 	"time"
 )
@@ -37,7 +38,8 @@ func main() {
 	fmt.Println("4. Edit Buku")
 	fmt.Println("5. Hapus Buku")
 	fmt.Println("6. Generate PDF")
-	fmt.Println("7. Keluar")
+	fmt.Println("7. Import CSV ke Database")
+	fmt.Println("8. Keluar")
 
 	fmt.Print("Masukkan Opsi : ")
 	_, err := fmt.Scanln(&opsi)
@@ -84,6 +86,12 @@ func main() {
 	case 6:
 		GeneratePdfBuku(config.Mysql.DB)
 	case 7:
+		err := utils.GetLibrary(config.Mysql.DB)
+		if err != nil {
+			fmt.Println("Terjadi Error : ", err)
+			return
+		}
+	case 8:
 		os.Exit(0)
 	default:
 		fmt.Println("Tidak Ada Opsi")

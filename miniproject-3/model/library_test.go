@@ -34,22 +34,35 @@ func TestCreateCarSuccess(t *testing.T) {
 
 	//fmt.Println(libraryData)
 
-	config.Mysql.DB.Unscoped().Delete(&libraryData)
+	//config.Mysql.DB.Unscoped().Delete(&libraryData)
 }
 
 func TestGetByIdSuccess(t *testing.T) {
 	Init()
 
 	libraryData := model.Library{
+		ISBN:    "6767545",
+		Penulis: "Hendrawan Teja Bukti",
+		Tahun:   2006,
+		Judul:   "Manusia Setengah Dua Belas",
+		Gambar:  "12.jpg",
+		Stok:    1,
+	}
+
+	err := libraryData.Create(config.Mysql.DB)
+	assert.Nil(t, err)
+
+	libraryData = model.Library{
 		Model: model.Model{
-			ID: 1,
+			ID: libraryData.ID,
 		},
 	}
 
-	data, err := libraryData.GetById(config.Mysql.DB, libraryData.ID)
+	_, err = libraryData.GetById(config.Mysql.DB, libraryData.ID)
 	assert.Nil(t, err)
 
-	fmt.Println(data)
+	//fmt.Println(data)
+	//config.Mysql.DB.Unscoped().Delete(&libraryData)
 }
 
 func TestGetAll(t *testing.T) {
@@ -73,7 +86,7 @@ func TestGetAll(t *testing.T) {
 
 	fmt.Println(res)
 
-	config.Mysql.DB.Unscoped().Delete(&libraryData)
+	//config.Mysql.DB.Unscoped().Delete(&libraryData)
 }
 
 func TestUpdateByID(t *testing.T) {
@@ -96,7 +109,7 @@ func TestUpdateByID(t *testing.T) {
 	err = libraryData.UpdateOneByID(config.Mysql.DB, libraryData.ID)
 	assert.Nil(t, err)
 
-	config.Mysql.DB.Unscoped().Delete(&libraryData)
+	//config.Mysql.DB.Unscoped().Delete(&libraryData)
 }
 
 func TestDeleteByID(t *testing.T) {
@@ -123,5 +136,5 @@ func TestDeleteByID(t *testing.T) {
 	err = libraryData.DeleteByID(config.Mysql.DB, libraryData.ID)
 	assert.Nil(t, err)
 
-	config.Mysql.DB.Unscoped().Delete(&libraryData)
+	//config.Mysql.DB.Unscoped().Delete(&libraryData)
 }
